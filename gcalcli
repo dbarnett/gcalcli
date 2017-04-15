@@ -546,6 +546,7 @@ class gcalcli:
             else:
                 return False
 
+        self.prefix = hasOption('prefix', '')
         self.military = hasOption('military', False)
         self.ignoreStarted = not hasOption('started', True)
         self.ignoreDeclined = not hasOption('declined', True)
@@ -1159,6 +1160,7 @@ class gcalcli:
             sys.stdout.write(_u(output))
 
     def _PrintEvent(self, event, prefix):
+        prefix = self.prefix and event['s'].strftime(self.prefix) or prefix
 
         def _formatDescr(descr, indent, box):
             wrapper = textwrap.TextWrapper()
@@ -1203,7 +1205,7 @@ class gcalcli:
 
         PrintMsg(self.dateColor, prefix)
 
-        happeningNow = event['s'] <= self.now <= event['e']
+        happeningNow = event['s'] - timedelta(minutes=30) <= self.now <= event['e']
         allDay = self._IsAllDay(event)
         eventColor = self.nowMarkerColor if happeningNow and not allDay \
             else self._CalendarColor(event['gcalcli_cal'])
@@ -2191,6 +2193,7 @@ gflags.add_argument("--nocolor", action="store_false", dest="color",
                     help="Enable/Disable all color output")
 gflags.add_argument("--nolineart", action="store_false", dest="lineart",
                     help="Enable/Disable line art")
+gflags.add_argument("--prefix", default=None, type=str, nargs="?", help="Datetime format prefix applied to all events")
 
 detailsParser = argparse.ArgumentParser(add_help=False)
 detailsParser.add_argument("--details", default=[], type=str, action="append",
