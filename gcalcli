@@ -574,6 +574,7 @@ class gcalcli:
                 return False
 
         self.prefix = hasOption('prefix', '')
+        self.xmobar = hasOption('xmobar', False)
         self.military = hasOption('military', False)
         self.ignoreStarted = not hasOption('started', True)
         self.ignoreDeclined = not hasOption('declined', True)
@@ -1244,12 +1245,12 @@ class gcalcli:
         eventColor = self.nowMarkerColor if happeningNow and not allDay \
             else self._CalendarColor(event['gcalcli_cal'])
 
+        fmt = '  ' + timeFormat + '  %s'
         if allDay:
-            fmt = '  ' + timeFormat + '  %s\n'
             PrintMsg(eventColor, fmt % ('', _u(self._ValidTitle(event).strip())))
         else:
-            fmt = '  ' + timeFormat + '  %s\n'
             PrintMsg(eventColor, fmt % (_u(tmpTimeStr), _u(self._ValidTitle(event).strip())))
+        PrintMsg(CLR_NRM(), '\n')
 
         if self.detailCalendar:
             xstr = "%s  Calendar: %s\n" % (detailsIndent, event['gcalcli_cal']['summary'])
@@ -1545,7 +1546,7 @@ class gcalcli:
             return
 
         # 10 chars for day and length must match 'indent' in _PrintEvent
-        dayFormat = '\n%Y-%m-%d' if yearDate else '\n%a %b %d'
+        dayFormat = '%Y-%m-%d' if yearDate else '%a %b %d'
         day = ''
 
         for event in eventList:
