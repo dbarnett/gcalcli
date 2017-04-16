@@ -1238,7 +1238,8 @@ class gcalcli:
         if not prefix:
             prefix = indent
 
-        PrintMsg(self.dateColor, prefix)
+        if not self.xmobar or event['s'].day != datetime.now().day:
+            PrintMsg(self.dateColor, prefix)
 
         happeningNow = event['s'] - timedelta(minutes=30) <= self.now <= event['e']
         allDay = self._IsAllDay(event)
