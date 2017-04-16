@@ -237,6 +237,7 @@ class CLR:
 
     useColor = True
     conky = False
+    xmobar = False
 
     def __str__(self):
         return self.color if self.useColor else ""
@@ -309,6 +310,9 @@ class CLR_WHT(CLR):
 class CLR_BRWHT(CLR):
     color = "\033[37;1m"
 
+class CLR_END(CLR):
+    color = ""
+
 
 def SetConkyColors():
     # XXX these colors should be configurable
@@ -330,6 +334,27 @@ def SetConkyColors():
     CLR_BRCYN.color = "${color cyan}"
     CLR_WHT.color = "${color white}"
     CLR_BRWHT.color = "${color white}"
+
+def SetXmobarColors():
+    CLR.xmobar = True
+    CLR_NRM.color = ""
+    CLR_BLK.color = "<fc=black>"
+    CLR_BRBLK.color = "<fc=black>"
+    CLR_RED.color = "<fc=red>"
+    CLR_BRRED.color = "<fc=red>"
+    CLR_GRN.color = "<fc=green>"
+    CLR_BRGRN.color = "<fc=green>"
+    CLR_YLW.color = "<fc=yellow>"
+    CLR_BRYLW.color = "<fc=yellow>"
+    CLR_BLU.color = "<fc=blue>"
+    CLR_BRBLU.color = "<fc=blue>"
+    CLR_MAG.color = "<fc=magenta>"
+    CLR_BRMAG.color = "<fc=magenta>"
+    CLR_CYN.color = "<fc=cyan>"
+    CLR_BRCYN.color = "<fc=cyan>"
+    CLR_WHT.color = "<fc=white>"
+    CLR_BRWHT.color = "<fc=white>"
+    CLR_END.color = "</fc>"
 
 
 class ART:
@@ -405,6 +430,7 @@ def PrintMsg(color, msg):
     if CLR.useColor:
         sys.stdout.write(str(color))
         sys.stdout.write(msg)
+        sys.stdout.write(str(CLR_END()))
         sys.stdout.write(str(CLR_NRM()))
     else:
         sys.stdout.write(msg)
@@ -940,17 +966,17 @@ class gcalcli:
         topWeekDivider = (str(self.borderColor) +
                           str(ART_ULC()) + dayWidthLine +
                           ((days - 1) * (str(ART_UTE()) + dayWidthLine)) +
-                          str(ART_URC()) + str(CLR_NRM()))
+                          str(ART_URC()) + str(CLR_END()) + str(CLR_NRM()))
 
         midWeekDivider = (str(self.borderColor) +
                           str(ART_LTE()) + dayWidthLine +
                           ((days - 1) * (str(ART_CRS()) + dayWidthLine)) +
-                          str(ART_RTE()) + str(CLR_NRM()))
+                          str(ART_RTE()) + str(CLR_END()) + str(CLR_NRM()))
 
         botWeekDivider = (str(self.borderColor) +
                           str(ART_LLC()) + dayWidthLine +
                           ((days - 1) * (str(ART_BTE()) + dayWidthLine)) +
-                          str(ART_LRC()) + str(CLR_NRM()))
+                          str(ART_LRC()) + str(CLR_END()) + str(CLR_NRM()))
 
         empty = self.calWidth * ' '
 
@@ -958,7 +984,7 @@ class gcalcli:
         dayNames = [date(2001, 1, i + 1).strftime('%A') for i in range(7)]
         dayNames = dayNames[6:] + dayNames[:6]
 
-        dayHeader = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
+        dayHeader = str(self.borderColor) + str(ART_VRT()) + str(CLR_END()) + str(CLR_NRM())
         for i in dayNums:
             if self.calMonday:
                 if i == 6:
@@ -968,15 +994,14 @@ class gcalcli:
             else:
                 dayName = dayNames[i]
             dayName += ' ' * (self.calWidth - self._PrintLen(dayName))
-            dayHeader += str(self.dateColor) + dayName + str(CLR_NRM())
-            dayHeader += str(self.borderColor) + str(ART_VRT()) + \
-                str(CLR_NRM())
+            dayHeader += str(self.dateColor) + dayName + str(CLR_END()) + str(CLR_NRM())
+            dayHeader += str(self.borderColor) + str(ART_VRT()) + str(CLR_END()) + str(CLR_NRM())
 
         if cmd == 'calm':
             topMonthDivider = (str(self.borderColor) +
                                str(ART_ULC()) + dayWidthLine +
                                ((days - 1) * (str(ART_HRZ()) + dayWidthLine)) +
-                               str(ART_URC()) + str(CLR_NRM()))
+                               str(ART_URC()) + str(CLR_END()) + str(CLR_NRM()))
             PrintMsg(CLR_NRM(), "\n" + topMonthDivider + "\n")
 
             m = startDateTime.strftime('%B %Y')
@@ -985,12 +1010,15 @@ class gcalcli:
             PrintMsg(CLR_NRM(),
                      str(self.borderColor) +
                      str(ART_VRT()) +
+                     str(CLR_END()) +
                      str(CLR_NRM()) +
                      str(self.dateColor) +
                      m +
+                     str(CLR_END()) +
                      str(CLR_NRM()) +
                      str(self.borderColor) +
                      str(ART_VRT()) +
+                     str(CLR_END()) +
                      str(CLR_NRM()) +
                      '\n')
 
@@ -1022,7 +1050,7 @@ class gcalcli:
         for i in range(count):
 
             # create/print date line
-            line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
+            line = str(self.borderColor) + str(ART_VRT()) + str(CLR_END()) + str(CLR_NRM())
             for j in dayNums:
                 if cmd == 'calw':
                     d = (startWeekDateTime +
@@ -1041,12 +1069,14 @@ class gcalcli:
                     d += " **"
 
                 d += ' ' * (self.calWidth - self._PrintLen(d))
-                line += str(tmpDateColor) + \
-                    d + \
-                    str(CLR_NRM()) + \
-                    str(self.borderColor) + \
-                    str(ART_VRT()) + \
-                    str(CLR_NRM())
+                line += (str(tmpDateColor) +
+                    d +
+                    str(CLR_END()) +
+                    str(CLR_NRM()) +
+                    str(self.borderColor) +
+                    str(ART_VRT()) +
+                    str(CLR_END()) +
+                    str(CLR_NRM()))
             PrintMsg(CLR_NRM(), line + "\n")
 
             weekColorStrings = ['', '', '', '', '', '', '']
@@ -1062,7 +1092,7 @@ class gcalcli:
             while 1:
 
                 done = True
-                line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
+                line = str(self.borderColor) + str(ART_VRT()) + str(CLR_END()) + str(CLR_NRM())
 
                 for j in dayNums:
 
@@ -1071,6 +1101,7 @@ class gcalcli:
                         line += (empty +
                                  str(self.borderColor) +
                                  str(ART_VRT()) +
+                                 str(CLR_END()) +
                                  str(CLR_NRM()))
                         continue
 
@@ -1092,6 +1123,7 @@ class gcalcli:
                         line += (empty +
                                  str(self.borderColor) +
                                  str(ART_VRT()) +
+                                 str(CLR_END()) +
                                  str(CLR_NRM()))
                         done = False
                         continue
@@ -1110,6 +1142,7 @@ class gcalcli:
                     done = False
                     line += (str(self.borderColor) +
                              str(ART_VRT()) +
+                             str(CLR_END()) +
                              str(CLR_NRM()))
 
                 if done:
@@ -2189,6 +2222,7 @@ gflags.add_argument("--refresh", action="store_true", help="Delete and refresh c
 gflags.add_argument("--nocache", action="store_false", dest="cache",
                     help="Execute command without using cache")
 gflags.add_argument("--conky", action="store_true", help="Use Conky color codes")
+gflags.add_argument("--xmobar", action="store_true", help="Use Xmobar color codes")
 gflags.add_argument("--nocolor", action="store_false", dest="color",
                     help="Enable/Disable all color output")
 gflags.add_argument("--nolineart", action="store_false", dest="lineart",
@@ -2352,6 +2386,9 @@ def BowChickaWowWow():
 
     if FLAGS.conky:
         SetConkyColors()
+
+    if FLAGS.xmobar:
+        SetXmobarColors()
 
     if FLAGS.locale:
         try:
