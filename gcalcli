@@ -1543,7 +1543,7 @@ class gcalcli:
                        yearDate=False, work=None):
 
         if len(eventList) == 0:
-            PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
+            PrintMsg(CLR_YLW(), "No Events Found...")
             return
 
         # 10 chars for day and length must match 'indent' in _PrintEvent
