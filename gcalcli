@@ -667,7 +667,7 @@ class gcalcli:
 
         return None
 
-    def _GoogleAuth(self):
+    def _GoogleAuth(self, timeout=None):
         if not self.authHttp:
             if self.configFolder:
                 storage = Storage(os.path.expanduser("%s/oauth" %
@@ -687,7 +687,7 @@ class gcalcli:
                     storage,
                     FLAGS)
 
-            self.authHttp = credentials.authorize(httplib2.Http())
+            self.authHttp = credentials.authorize(httplib2.Http(timeout=timeout))
 
         return self.authHttp
 
@@ -696,17 +696,16 @@ class gcalcli:
             self.calService = \
                 build(serviceName='calendar',
                       version='v3',
-                      http=self._GoogleAuth())
+                      http=self._GoogleAuth(timeout=1))
 
         return self.calService
 
     def _UrlService(self):
         if not self.urlService:
-            self._GoogleAuth()
             self.urlService = \
                 build(serviceName='urlshortener',
                       version='v1',
-                      http=self._GoogleAuth())
+                      http=self._GoogleAuth(timeout=1))
 
         return self.urlService
 
