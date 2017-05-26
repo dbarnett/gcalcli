@@ -575,6 +575,7 @@ class gcalcli:
 
         self.prefix = hasOption('prefix', '')
         self.xmobar = hasOption('xmobar', False)
+        self.proxy = hasOption('proxy', None)
         self.military = hasOption('military', False)
         self.ignoreStarted = not hasOption('started', True)
         self.ignoreDeclined = not hasOption('declined', True)
@@ -690,7 +691,8 @@ class gcalcli:
                     storage,
                     FLAGS)
 
-            self.authHttp = credentials.authorize(httplib2.Http(timeout=timeout))
+            proxy_info = httplib2.proxy_info_from_url(self.proxy) if self.proxy else None
+            self.authHttp = credentials.authorize(httplib2.Http(timeout=timeout, proxy_info=proxy_info))
 
         return self.authHttp
 
@@ -2240,6 +2242,7 @@ gflags.add_argument("--nocolor", action="store_false", dest="color",
 gflags.add_argument("--nolineart", action="store_false", dest="lineart",
                     help="Enable/Disable line art")
 gflags.add_argument("--prefix", default=None, type=str, nargs="?", help="Datetime format prefix applied to all events")
+gflags.add_argument("--proxy", default=None, type=str, help="Define a proxy to be used")
 
 detailsParser = argparse.ArgumentParser(add_help=False)
 detailsParser.add_argument("--details", default=[], type=str, action="append",
