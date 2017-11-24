@@ -198,6 +198,7 @@ try:
     from oauth2client.file import Storage
     from oauth2client.client import OAuth2WebServerFlow
     from oauth2client import tools
+    from unidecode import unidecode
 except ImportError as e:
     print("ERROR: Missing module - %s" % e.args[0])
     sys.exit(1)
@@ -423,10 +424,12 @@ class ART_UTE(ART):
 
 
 def PrintErrMsg(msg):
+    msg = unidecode(msg.decode('utf-8') if isinstance(msg, str) else msg)
     PrintMsg(CLR_BRRED(), msg)
 
 
 def PrintMsg(color, msg):
+    msg = unidecode(msg.decode('utf-8') if isinstance(msg, str) else msg)
     if CLR.useColor:
         sys.stdout.write(str(color))
         sys.stdout.write(msg)

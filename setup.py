@@ -26,7 +26,8 @@ setup(name='gcalcli',
           'google-api-python-client>=1.4',
           'httplib2',
           'oauth2client',
-          'six'
+          'six',
+          'unidecode'
       ],
       extras_require={
           'vobject': ["vobject"],
