@@ -582,6 +582,7 @@ class gcalcli:
         self.military = hasOption('military', False)
         self.ignoreStarted = not hasOption('started', True)
         self.ignoreDeclined = not hasOption('declined', True)
+        self.ignoreAllDay = not hasOption('noallday', False)
         self.calWidth = hasOption('width', 10)
         self.calMonday = hasOption('monday', False)
         self.calWeekend = hasOption('noweekend', True)
@@ -1569,6 +1570,8 @@ class gcalcli:
                 continue
             if self.ignoreDeclined and self._DeclinedEvent(event):
                 continue
+            if self.ignoreAllDay and self._IsAllDay(event):
+                continue
 
             tmpDayStr = event['s'].strftime(dayFormat)
             prefix = None
@@ -2265,6 +2268,7 @@ outputParser.add_argument("--nodeclined", action="store_false", dest="declined",
                           help="Hide events that have been declined")
 outputParser.add_argument("--width", "-w", default=10, type=ValidWidth, help="Set output width")
 outputParser.add_argument("--military", action="store_true", help="Use 24 hour display")
+outputParser.add_argument("--noallday", action="store_false", help="Ignore all day events")
 
 colorParser = argparse.ArgumentParser(add_help=False)
 colorParser.add_argument("--color_owner", default="cyan", type=ValidColor,
