@@ -207,7 +207,7 @@ except ImportError as e:
 # not, we just return a fake failure every time and use only dateutil.
 try:
     from parsedatetime import parsedatetime
-except:
+except ImportError:
     class parsedatetime:
         class Calendar:
             def parse(self, string):
@@ -311,6 +311,7 @@ class CLR_WHT(CLR):
 class CLR_BRWHT(CLR):
     color = "\033[37;1m"
 
+
 class CLR_END(CLR):
     color = ""
 
@@ -335,6 +336,7 @@ def SetConkyColors():
     CLR_BRCYN.color = "${color cyan}"
     CLR_WHT.color = "${color white}"
     CLR_BRWHT.color = "${color white}"
+
 
 def SetXmobarColors():
     CLR.xmobar = True
@@ -424,12 +426,12 @@ class ART_UTE(ART):
 
 
 def PrintErrMsg(msg):
-    msg = unidecode(msg.decode('utf-8') if isinstance(msg, str) else msg)
+    msg = unidecode(msg)
     PrintMsg(CLR_BRRED(), msg)
 
 
 def PrintMsg(color, msg):
-    msg = unidecode(msg.decode('utf-8') if isinstance(msg, str) else msg)
+    msg = unidecode(msg)
     if CLR.useColor:
         sys.stdout.write(str(color))
         sys.stdout.write(msg)
@@ -441,7 +443,6 @@ def PrintMsg(color, msg):
 
 
 def DebugPrint(msg):
-    return
     PrintMsg(CLR_YLW(), msg)
 
 
@@ -465,7 +466,7 @@ class DateTimeParser:
 
         try:
             eTimeStart = parse(eWhen, default=defaultDateTime)
-        except:
+        except Exception:
             struct, result = self.pdtCalendar.parse(eWhen)
             if not result:
                 raise ValueError("Date and time is invalid")
@@ -485,14 +486,14 @@ def GetTimeFromStr(eWhen, eDuration=0):
 
     try:
         eTimeStart = dtp.fromString(eWhen)
-    except:
+    except Exception:
         PrintErrMsg('Date and time is invalid!\n')
         sys.exit(1)
 
     if 'allday' in FLAGS and FLAGS.allday:
         try:
             eTimeStop = eTimeStart + timedelta(days=float(eDuration))
-        except:
+        except Exception:
             PrintErrMsg('Duration time (days) is invalid\n')
             sys.exit(1)
 
@@ -502,7 +503,7 @@ def GetTimeFromStr(eWhen, eDuration=0):
     else:
         try:
             eTimeStop = eTimeStart + timedelta(minutes=float(eDuration))
-        except:
+        except Exception:
             PrintErrMsg('Duration time (minutes) is invalid\n')
             sys.exit(1)
 
@@ -696,7 +697,8 @@ class gcalcli:
                     FLAGS)
 
             proxy_info = httplib2.proxy_info_from_url(self.proxy) if self.proxy else None
-            self.authHttp = credentials.authorize(httplib2.Http(timeout=timeout, proxy_info=proxy_info))
+            self.authHttp = credentials.authorize(
+                httplib2.Http(timeout=timeout, proxy_info=proxy_info))
 
         return self.authHttp
 
@@ -707,7 +709,7 @@ class gcalcli:
                     build(serviceName='calendar',
                           version='v3',
                           http=self._GoogleAuth(timeout=1))
-        except httplib2.ServerNotFoundError as e:
+        except httplib2.ServerNotFoundError:
             return None
 
         return self.calService
@@ -719,7 +721,7 @@ class gcalcli:
                     build(serviceName='urlshortener',
                           version='v1',
                           http=self._GoogleAuth(timeout=1))
-        except httplib2.ServerNotFoundError as e:
+        except httplib2.ServerNotFoundError:
             return None
 
         return self.urlService
@@ -762,7 +764,8 @@ class gcalcli:
             pageToken = calList.get('nextPageToken')
             if pageToken:
                 calList = self._RetryWithBackoff(
-                    self._CalService() and self._CalService().calendarList().list(pageToken=pageToken))
+                    self._CalService() and self._CalService().calendarList().list(
+                        pageToken=pageToken))
             else:
                 break
 
@@ -976,23 +979,26 @@ class gcalcli:
 
         dayWidthLine = (self.calWidth * str(ART_HRZ()))
 
-        dayNums = range(7) if self.calWeekend else range(1,6)
+        dayNums = range(7) if self.calWeekend else range(1, 6)
         days = len(dayNums)
 
         topWeekDivider = (str(self.borderColor) +
                           str(ART_ULC()) + dayWidthLine +
                           ((days - 1) * (str(ART_UTE()) + dayWidthLine)) +
-                          str(ART_URC()) + str(CLR_END()) if str(self.borderColor) else '' + str(CLR_NRM()))
+                          str(ART_URC()) + str(CLR_END()) if str(self.borderColor) else '' +
+                          str(CLR_NRM()))
 
         midWeekDivider = (str(self.borderColor) +
                           str(ART_LTE()) + dayWidthLine +
                           ((days - 1) * (str(ART_CRS()) + dayWidthLine)) +
-                          str(ART_RTE()) + str(CLR_END()) if str(self.borderColor) else '' + str(CLR_NRM()))
+                          str(ART_RTE()) + str(CLR_END()) if str(self.borderColor) else '' +
+                          str(CLR_NRM()))
 
         botWeekDivider = (str(self.borderColor) +
                           str(ART_LLC()) + dayWidthLine +
                           ((days - 1) * (str(ART_BTE()) + dayWidthLine)) +
-                          str(ART_LRC()) + str(CLR_END()) if str(self.borderColor) else '' + str(CLR_NRM()))
+                          str(ART_LRC()) + str(CLR_END()) if str(self.borderColor) else '' +
+                          str(CLR_NRM()))
 
         empty = self.calWidth * ' '
 
@@ -1000,7 +1006,8 @@ class gcalcli:
         dayNames = [date(2001, 1, i + 1).strftime('%A') for i in range(7)]
         dayNames = dayNames[6:] + dayNames[:6]
 
-        dayHeader = str(self.borderColor) + str(ART_VRT()) + str(CLR_END()) if str(self.borderColor) else '' + str(CLR_NRM())
+        dayHeader = (str(self.borderColor) + str(ART_VRT()) + str(CLR_END())
+                     if str(self.borderColor) else '' + str(CLR_NRM()))
         for i in dayNums:
             if self.calMonday:
                 if i == 6:
@@ -1010,14 +1017,17 @@ class gcalcli:
             else:
                 dayName = dayNames[i]
             dayName += ' ' * (self.calWidth - self._PrintLen(dayName))
-            dayHeader += str(self.dateColor) + dayName + str(CLR_END()) if str(self.dateColor) else '' + str(CLR_NRM())
-            dayHeader += str(self.borderColor) + str(ART_VRT()) + str(CLR_END()) if str(self.borderColor) else '' + str(CLR_NRM())
+            dayHeader += (str(self.dateColor) + dayName + str(CLR_END())
+                          if str(self.dateColor) else '' + str(CLR_NRM()))
+            dayHeader += (str(self.borderColor) + str(ART_VRT()) + str(CLR_END())
+                          if str(self.borderColor) else '' + str(CLR_NRM()))
 
         if cmd == 'calm':
             topMonthDivider = (str(self.borderColor) +
                                str(ART_ULC()) + dayWidthLine +
                                ((days - 1) * (str(ART_HRZ()) + dayWidthLine)) +
-                               str(ART_URC()) + str(CLR_END()) if str(self.borderColor) else '' + str(CLR_NRM()))
+                               str(ART_URC()) + str(CLR_END())
+                               if str(self.borderColor) else '' + str(CLR_NRM()))
             PrintMsg(CLR_NRM(), "\n" + topMonthDivider + "\n")
 
             m = startDateTime.strftime('%B %Y')
@@ -1041,7 +1051,8 @@ class gcalcli:
             botMonthDivider = (str(self.borderColor) +
                                str(ART_LTE()) + dayWidthLine +
                                ((days - 1) * (str(ART_UTE()) + dayWidthLine)) +
-                               str(ART_RTE()) + str(CLR_END()) if str(self.borderColor) else '' + str(CLR_NRM()))
+                               str(ART_RTE()) + str(CLR_END())
+                               if str(self.borderColor) else '' + str(CLR_NRM()))
             PrintMsg(CLR_NRM(), botMonthDivider + "\n")
 
         else:  # calw
@@ -1066,7 +1077,8 @@ class gcalcli:
         for i in range(count):
 
             # create/print date line
-            line = str(self.borderColor) + str(ART_VRT()) + str(CLR_END()) if str(self.borderColor) else '' + str(CLR_NRM())
+            line = (str(self.borderColor) + str(ART_VRT()) + str(CLR_END())
+                    if str(self.borderColor) else '' + str(CLR_NRM()))
             for j in dayNums:
                 if cmd == 'calw':
                     d = (startWeekDateTime +
@@ -1086,13 +1098,13 @@ class gcalcli:
 
                 d += ' ' * (self.calWidth - self._PrintLen(d))
                 line += (str(tmpDateColor) +
-                    d +
-                    str(CLR_END()) if str(tmpDateColor) else '' +
-                    str(CLR_NRM()) +
-                    str(self.borderColor) +
-                    str(ART_VRT()) +
-                    str(CLR_END()) if str(self.borderColor) else '' +
-                    str(CLR_NRM()))
+                         d +
+                         str(CLR_END()) if str(tmpDateColor) else '' +
+                         str(CLR_NRM()) +
+                         str(self.borderColor) +
+                         str(ART_VRT()) +
+                         str(CLR_END()) if str(self.borderColor) else '' +
+                         str(CLR_NRM()))
             PrintMsg(CLR_NRM(), line + "\n")
 
             weekColorStrings = ['', '', '', '', '', '', '']
@@ -1108,7 +1120,8 @@ class gcalcli:
             while 1:
 
                 done = True
-                line = str(self.borderColor) + str(ART_VRT()) + str(CLR_END()) if str(self.borderColor) else '' + str(CLR_NRM())
+                line = (str(self.borderColor) + str(ART_VRT()) + str(CLR_END())
+                        if str(self.borderColor) else '' + str(CLR_NRM()))
 
                 for j in dayNums:
 
@@ -1252,7 +1265,7 @@ class gcalcli:
         if not prefix:
             prefix = indent
 
-        if not self.xmobar or event['s'].day != datetime.now().day:
+        if not self.xmobar or event['s'].day != datetime.now(tzlocal()).day:
             PrintMsg(self.dateColor, prefix)
 
         happeningNow = event['s'] - timedelta(minutes=30) <= self.now <= event['e']
@@ -1397,7 +1410,7 @@ class gcalcli:
             return
 
         PrintMsg(CLR_MAG(), "Delete? [N]o [y]es [q]uit: ")
-        val = raw_input()
+        val = input()
 
         if not val or val.lower() == 'n':
             return
@@ -1427,7 +1440,7 @@ class gcalcli:
                                 "[t]itle [l]ocation " +
                                 "[w]hen len[g]th " +
                                 "[r]eminder [d]escr: ")
-            val = raw_input()
+            val = input()
 
             if not val or val.lower() == 'n':
                 return
@@ -1455,21 +1468,21 @@ class gcalcli:
 
             elif val.lower() == 't':
                 PrintMsg(CLR_MAG(), "Title: ")
-                val = raw_input()
+                val = input()
                 if val.strip():
                     event['summary'] = \
                         _u(val.strip())
 
             elif val.lower() == 'l':
                 PrintMsg(CLR_MAG(), "Location: ")
-                val = raw_input()
+                val = input()
                 if val.strip():
                     event['location'] = \
                         _u(val.strip())
 
             elif val.lower() == 'w':
                 PrintMsg(CLR_MAG(), "When: ")
-                val = raw_input()
+                val = input()
                 if val.strip():
                     td = (event['e'] - event['s'])
                     length = ((td.days * 1440) + (td.seconds / 60))
@@ -1495,7 +1508,7 @@ class gcalcli:
 
             elif val.lower() == 'g':
                 PrintMsg(CLR_MAG(), "Length (mins): ")
-                val = raw_input()
+                val = input()
                 if val.strip():
                     newStart, newEnd = \
                         GetTimeFromStr(event['start']['dateTime'], val.strip())
@@ -1523,7 +1536,7 @@ class gcalcli:
                 while 1:
                     PrintMsg(CLR_MAG(),
                              "Enter a valid reminder or '.' to end: ")
-                    r = raw_input()
+                    r = input()
                     if r == '.':
                         break
                     rem.append(r)
@@ -1541,7 +1554,7 @@ class gcalcli:
 
             elif val.lower() == 'd':
                 PrintMsg(CLR_MAG(), "Description: ")
-                val = raw_input()
+                val = input()
                 if val.strip():
                     event['description'] = \
                         _u(val.strip())
@@ -1696,13 +1709,13 @@ class gcalcli:
         else:
             try:
                 start = self.dateParser.fromString(startText)
-            except:
+            except Exception:
                 raise Exception('Error: failed to parse start time\n')
 
         if endText:
             try:
                 end = self.dateParser.fromString(endText)
-            except:
+            except Exception:
                 raise Exception('Error: failed to parse end time\n')
 
         return (start, end)
@@ -1763,7 +1776,7 @@ class gcalcli:
                 start = self.dateParser.fromString(startText)
                 start = start.replace(hour=0, minute=0, second=0,
                                       microsecond=0)
-            except:
+            except Exception:
                 PrintErrMsg('Error: failed to parse start time\n')
                 return
 
@@ -1816,8 +1829,9 @@ class gcalcli:
             return
 
         newEvent = self._RetryWithBackoff(
-            self._CalService() and self._CalService().events().quickAdd(calendarId=self.cals[0]['id'],
-                                                 text=eventText))
+            self._CalService() and self._CalService().events().quickAdd(
+                calendarId=self.cals[0]['id'],
+                text=eventText))
 
         if reminder or not self.defaultReminders:
             rem = {}
@@ -2089,7 +2103,7 @@ class gcalcli:
 
         try:
             import vobject
-        except:
+        except Exception:
             PrintErrMsg('Python vobject module not installed!\n')
             sys.exit(1)
 
@@ -2104,7 +2118,7 @@ class gcalcli:
 
         if icsFile:
             try:
-                f = file(icsFile)
+                f = open(icsFile)
             except Exception as e:
                 PrintErrMsg("Error: " + str(e) + "!\n")
                 sys.exit(1)
@@ -2136,7 +2150,7 @@ class gcalcli:
                     continue
 
                 PrintMsg(CLR_MAG(), "\n[S]kip [i]mport [q]uit: ")
-                val = raw_input()
+                val = input()
                 if not val or val.lower() == 's':
                     continue
                 if val.lower() == 'i':
@@ -2214,6 +2228,7 @@ def ValidReminder(value):
     else:
         return value
 
+
 FLAGS = {}
 gflags = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -2247,7 +2262,11 @@ gflags.add_argument("--nocolor", action="store_false", dest="color",
                     help="Enable/Disable all color output")
 gflags.add_argument("--nolineart", action="store_false", dest="lineart",
                     help="Enable/Disable line art")
-gflags.add_argument("--prefix", default=None, type=str, nargs="?", help="Datetime format prefix applied to all events")
+gflags.add_argument("--prefix",
+                    default=None,
+                    type=str,
+                    nargs="?",
+                    help="Datetime format prefix applied to all events")
 gflags.add_argument("--proxy", default=None, type=str, help="Define a proxy to be used")
 
 detailsParser = argparse.ArgumentParser(add_help=False)
@@ -2484,27 +2503,27 @@ def BowChickaWowWow():
         if FLAGS.prompt:
             if FLAGS.title is None:
                 PrintMsg(CLR_MAG(), "Title: ")
-                FLAGS.title = raw_input()
+                FLAGS.title = input()
             if FLAGS.where is None:
                 PrintMsg(CLR_MAG(), "Location: ")
-                FLAGS.where = raw_input()
+                FLAGS.where = input()
             if FLAGS.when is None:
                 PrintMsg(CLR_MAG(), "When: ")
-                FLAGS.when = raw_input()
+                FLAGS.when = input()
             if FLAGS.duration is None:
                 if FLAGS.allday:
                     PrintMsg(CLR_MAG(), "Duration (days): ")
                 else:
                     PrintMsg(CLR_MAG(), "Duration (mins): ")
-                FLAGS.duration = raw_input()
+                FLAGS.duration = input()
             if FLAGS.description is None:
                 PrintMsg(CLR_MAG(), "Description: ")
-                FLAGS.description = raw_input()
+                FLAGS.description = input()
             if not FLAGS.reminder:
                 while 1:
                     PrintMsg(CLR_MAG(),
                              "Enter a valid reminder or '.' to end: ")
-                    r = raw_input()
+                    r = input()
                     if r == '.':
                         break
                     n, m = ParseReminder(str(r))
@@ -2555,6 +2574,7 @@ def BowChickaWowWow():
 def SIGINT_handler(signum, frame):
     PrintErrMsg('Signal caught, bye!\n')
     sys.exit(1)
+
 
 signal.signal(signal.SIGINT, SIGINT_handler)
 
