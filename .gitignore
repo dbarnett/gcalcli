@@ -1,3 +1,14 @@
+__pycache__/
+.pytest_cache/
 build/
 dist/
+venv/
+htmlcov/
+
 gcalcli.egg-info
+
+.coverage
+.pytest_cache?
+.tox
+
+*.pyc
