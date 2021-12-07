@@ -1,7 +1,9 @@
+from csv import DictReader, excel_tab
 import os
 import re
 import shlex
 import httplib2
+from itertools import chain
 import time
 import textwrap
 import json
@@ -14,8 +16,11 @@ except Exception:
     import pickle
 
 from gcalcli import __program__, __version__
-from gcalcli import utils
-from gcalcli.utils import days_since_epoch
+from gcalcli import actions, utils
+from gcalcli.actions import ACTIONS
+from gcalcli.details import (
+    _valid_title, ACTION_DEFAULT, DETAILS_DEFAULT, HANDLERS)
+from gcalcli.utils import days_since_epoch, is_all_day
 from gcalcli.validators import (
     get_input, get_override_color_id, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
     VALID_COLORS, STR_ALLOW_EMPTY, REMINDER, PARSABLE_DURATION
@@ -36,6 +41,8 @@ from oauth2client import tools
 from collections import namedtuple
 
 EventTitle = namedtuple('EventTitle', ['title', 'color'])
+
+CONFERENCE_DATA_VERSION = 1
 
 
 class GoogleCalendarInterface:
@@ -159,6 +166,9 @@ class GoogleCalendarInterface:
 
         return self.cal_service
 
+    def get_events(self):
+        return self.get_cal_service().events()
+
     def _get_cached(self):
         if self.options['config_folder']:
             cache_file = os.path.expanduser(
@@ -247,16 +257,6 @@ class GoogleCalendarInterface:
         else:
             return 'default'
 
-    def _valid_title(self, event):
-        if 'summary' in event and event['summary'].strip():
-            return event['summary']
-        else:
-            return '(No title)'
-
-    def _isallday(self, event):
-        return event['s'].hour == 0 and event['s'].minute == 0 and \
-            event['e'].hour == 0 and event['e'].minute == 0
-
     def _cal_monday(self, day_num):
         """Shift the day number if we're doing cal monday, or cal_weekend is
         false, since that also means we're starting on day 1
@@ -274,7 +274,7 @@ class GoogleCalendarInterface:
         return e_start < time_point and e_end >= time_point
 
     def _format_title(self, event, allday=False):
-        titlestr = self._valid_title(event)
+        titlestr = _valid_title(event)
         if allday:
             return titlestr
         elif self.options['military']:
@@ -303,7 +303,7 @@ class GoogleCalendarInterface:
 
         for event in event_list:
             event_daynum = self._cal_monday(int(event['s'].strftime('%w')))
-            event_allday = self._isallday(event)
+            event_allday = is_all_day(event)
 
             event_end_date = event['e']
             if event_allday:
@@ -587,56 +587,29 @@ class GoogleCalendarInterface:
                 self.printer.msg(week_bottom + '\n', color_border)
 
     def _tsv(self, start_datetime, event_list):
+        keys = set(self.details.keys())
+        keys.update(DETAILS_DEFAULT)
+
+        handlers = [handler
+                    for key, handler in HANDLERS.items()
+                    if key in keys]
+
+        header_row = chain.from_iterable(handler.fieldnames
+                                         for handler in handlers)
+        print(*header_row, sep='\t')
+
         for event in event_list:
             if self.options['ignore_started'] and (event['s'] < self.now):
                 continue
             if self.options['ignore_declined'] and self._DeclinedEvent(event):
                 continue
-            output = '%s\t%s\t%s\t%s' % (event['s'].strftime('%Y-%m-%d'),
-                                         event['s'].strftime('%H:%M'),
-                                         event['e'].strftime('%Y-%m-%d'),
-                                         event['e'].strftime('%H:%M'))
 
-            if self.details.get('url'):
-                output += '\t%s' % (event['htmlLink']
-                                    if 'htmlLink' in event else '')
-                output += '\t%s' % (event['hangoutLink']
-                                    if 'hangoutLink' in event else '')
+            row = []
+            for handler in handlers:
+                row.extend(handler.get(event))
 
-            if self.details.get('conference'):
-                conference_data = (event['conferenceData']
-                                   if 'conferenceData' in event else None)
-
-                # only display first entry point for TSV
-                # https://github.com/insanum/gcalcli/issues/533
-                entry_point = (conference_data['entryPoints'][0]
-                               if conference_data is not None else None)
-
-                output += '\t%s' % (entry_point['entryPointType']
-                                    if conference_data is not None else '')
-
-                output += '\t%s' % (entry_point['uri']
-                                    if conference_data is not None else '')
-
-            output += '\t%s' % self._valid_title(event).strip()
-
-            if self.details.get('location'):
-                output += '\t%s' % (event['location'].strip()
-                                    if 'location' in event else '')
-
-            if self.details.get('description'):
-                output += '\t%s' % (event['description'].strip()
-                                    if 'description' in event else '')
-
-            if self.details.get('calendar'):
-                output += '\t%s' % event['gcalcli_cal']['summary'].strip()
-
-            if self.details.get('email'):
-                output += '\t%s' % (event['creator']['email'].strip()
-                                    if 'email' in event['creator'] else '')
-
-            output = '%s\n' % output.replace('\n', '''\\n''')
-            sys.stdout.write(output)
+            output = ('\t'.join(row)).replace('\n', '''\\n''')
+            print(output)
 
     def _PrintEvent(self, event, prefix):
 
@@ -675,7 +648,7 @@ class GoogleCalendarInterface:
         self.printer.msg(prefix, self.options['color_date'])
 
         happening_now = event['s'] <= self.now <= event['e']
-        all_day = self._isallday(event)
+        all_day = is_all_day(event)
         if self.options['override_color'] and event.get('colorId'):
             if happening_now and not all_day:
                 event_color = self.options['color_now_marker']
@@ -690,7 +663,7 @@ class GoogleCalendarInterface:
         if all_day:
             fmt = '  ' + time_width + '  %s\n'
             self.printer.msg(
-                    fmt % ('', self._valid_title(event).strip()),
+                    fmt % ('', _valid_title(event).strip()),
                     event_color
             )
         else:
@@ -706,7 +679,7 @@ class GoogleCalendarInterface:
 
             self.printer.msg(
                     fmt % (tmp_start_time_str, tmp_end_time_str,
-                           self._valid_title(event).strip()),
+                           _valid_title(event).strip()),
                     event_color
             )
 
@@ -848,17 +821,19 @@ class GoogleCalendarInterface:
                 )
             self.printer.msg(xstr, 'default')
 
+    def delete(self, cal_id, event_id):
+        self._retry_with_backoff(
+            self.get_events()
+                .delete(calendarId=cal_id,
+                        eventId=event_id)
+        )
+
     def _delete_event(self, event):
+        cal_id = event['gcalcli_cal']['id']
+        event_id = event['id']
 
         if self.expert:
-            self._retry_with_backoff(
-                self.get_cal_service()
-                    .events()
-                    .delete(
-                        calendarId=event['gcalcli_cal']['id'],
-                        eventId=event['id']
-                    )
-            )
+            self.delete(cal_id, event_id)
             self.printer.msg('Deleted!\n', 'red')
             return
 
@@ -869,14 +844,7 @@ class GoogleCalendarInterface:
             return
 
         elif val.lower() == 'y':
-            self._retry_with_backoff(
-                self.get_cal_service()
-                    .events()
-                    .delete(
-                        calendarId=event['gcalcli_cal']['id'],
-                        eventId=event['id']
-                    )
-            )
+            self.delete(cal_id, event_id)
             self.printer.msg('Deleted!\n', 'red')
 
         elif val.lower() == 'q':
@@ -936,8 +904,7 @@ class GoogleCalendarInterface:
                         mod_event[k] = event[k]
 
                 self._retry_with_backoff(
-                    self.get_cal_service()
-                        .events()
+                    self.get_events()
                         .patch(
                             calendarId=event['gcalcli_cal']['id'],
                             eventId=event['id'],
@@ -1110,8 +1077,7 @@ class GoogleCalendarInterface:
             pageToken = events.get('nextPageToken')
             if pageToken:
                 events = self._retry_with_backoff(
-                             self.get_cal_service()
-                                 .events()
+                             self.get_events()
                                  .list(
                                      calendarId=cal['id'],
                                      pageToken=pageToken
@@ -1127,8 +1093,7 @@ class GoogleCalendarInterface:
         event_list = []
         for cal in self.cals:
             events = self._retry_with_backoff(
-                         self.get_cal_service()
-                             .events()
+                         self.get_events()
                              .list(
                                  calendarId=cal['id'],
                                  timeMin=start.isoformat() if start else None,
@@ -1237,6 +1202,21 @@ class GoogleCalendarInterface:
 
         return self._display_queried_events(start, end)
 
+    def AgendaUpdate(self, file=sys.stdin):
+        reader = DictReader(file, dialect=excel_tab)
+
+        if len(self.cals) != 1:
+            raise GcalcliError('Must specify a single calendar.')
+
+        cal = self.cals[0]
+
+        for row in reader:
+            action = row.get("action", ACTION_DEFAULT)
+            if action not in ACTIONS:
+                raise GcalcliError('Action "{}" not supported.'.format(action))
+
+            getattr(actions, action)(row, cal, self)
+
     def CalQuery(self, cmd, start_text='', count=1):
         if not start_text:
             # convert now to midnight this morning and use for default
@@ -1292,8 +1272,7 @@ class GoogleCalendarInterface:
             raise GcalcliError('You must only specify a single calendar\n')
 
         new_event = self._retry_with_backoff(
-            self.get_cal_service()
-                .events()
+            self.get_events()
                 .quickAdd(
                     calendarId=self.cals[0]['id'],
                     text=event_text
@@ -1310,8 +1289,7 @@ class GoogleCalendarInterface:
                                                       'method': m})
 
             new_event = self._retry_with_backoff(
-                            self.get_cal_service()
-                                .events()
+                            self.get_events()
                                 .patch(
                                     calendarId=self.cals[0]['id'],
                                     eventId=new_event['id'],
@@ -1370,7 +1348,7 @@ class GoogleCalendarInterface:
         event['attendees'] = list(map(lambda w: {'email': w}, who))
 
         event = self._add_reminders(event, reminders)
-        events = self.get_cal_service().events()
+        events = self.get_events()
         request = events.insert(calendarId=self.cals[0]['id'], body=event)
         new_event = self._retry_with_backoff(request)
 
@@ -1428,7 +1406,7 @@ class GoogleCalendarInterface:
                     event['s'].strftime('%p').lower()
 
             message += '%s  %s\n' % \
-                       (tmp_time_str, self._valid_title(event).strip())
+                       (tmp_time_str, _valid_title(event).strip())
 
         if not message:
             return
@@ -1602,8 +1580,7 @@ class GoogleCalendarInterface:
 
                 if not verbose:
                     new_event = self._retry_with_backoff(
-                                    self.get_cal_service()
-                                        .events()
+                                    self.get_events()
                                         .insert(
                                             calendarId=self.cals[0]['id'],
                                             body=event
@@ -1621,8 +1598,7 @@ class GoogleCalendarInterface:
                     continue
                 if val.lower() == 'i':
                     new_event = self._retry_with_backoff(
-                                    self.get_cal_service()
-                                        .events()
+                                    self.get_events()
                                         .insert(
                                             calendarId=self.cals[0]['id'],
                                             body=event
