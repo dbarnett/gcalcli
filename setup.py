@@ -39,6 +39,9 @@ setup(name='gcalcli',
           'httplib2',
           'oauth2client',
           'parsedatetime',
+          # JP new
+          'google-auth-httplib2',
+          'google-auth-oauthlib',
       ],
       extras_require={
           'vobject': ["vobject"],
