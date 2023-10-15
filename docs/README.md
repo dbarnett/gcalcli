@@ -135,6 +135,8 @@ See the manual (`man (1) gcalcli`), or run with `--help`/`-h` for detailed usage
 
 #### Login Information
 
+**UPDATE 15-Oct-2023:** To use the new method of authentication, follow the instructions at [Authorize credentials for a desktop application](https://developers.google.com/calendar/api/quickstart/python#authorize_credentials_for_a_desktop_application) & save the file as `~/.config/gcalcli/creds.json`
+
 OAuth2 is used for authenticating with your Google account. The resulting token
 is placed in the `~/.gcalcli_oauth` file. When you first start gcalcli the
 authentication process will proceed. Simply follow the instructions.
