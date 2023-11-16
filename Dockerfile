@@ -1,4 +1,4 @@
-FROM python:3.9-alpine
+FROM python:3.11-alpine
 
 ENV TZ=America/Chicago
 RUN apk add --no-cache gcc \
@@ -10,7 +10,7 @@ RUN apk add --no-cache gcc \
 
 COPY . /app
 WORKDIR /app
-RUN pip install -e .
+RUN python setup.py install
 RUN rm -rf /var/cache/apk/*
 
 ENTRYPOINT ["gcalcli"]
