@@ -142,7 +142,10 @@ def days_since_epoch(dt):
 def agenda_time_fmt(dt, military):
     hour_min_fmt = '%H:%M' if military else '%I:%M'
     ampm = '' if military else dt.strftime('%p').lower()
-    return dt.strftime(hour_min_fmt).lstrip('0') + ampm
+    time_str = dt.strftime(hour_min_fmt)
+    if not military:
+        time_str = time_str.lstrip("0")
+    return time_str + ampm
 
 
 def is_all_day(event):
