@@ -248,6 +248,8 @@ class GoogleCalendarInterface:
             return ansi_codes[event['colorId']]
         elif cal.get('colorSpec', None):
             return cal['colorSpec']
+        elif cal.get('colorId', None):
+            return ansi_codes[cal['colorId']]
         elif cal['accessRole'] == self.ACCESS_OWNER:
             return self.options['color_owner']
         elif cal['accessRole'] == self.ACCESS_WRITER:
