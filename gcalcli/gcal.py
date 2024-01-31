@@ -102,13 +102,15 @@ class GoogleCalendarInterface:
                     # This makes sure that if we have any regex matches
                     # that we toss them out in favor of the specific match
                     matches = [self_cal]
-                    self_cal['colorSpec'] = cal_name.color
+                    if cal_name.color != "default":
+                        self_cal['colorSpec'] = cal_name.color
                     break
                 # Otherwise, if the calendar matches as a regex, append
                 # it to the list of potential matches
                 elif re.search(cal_name.name, self_cal['summary'], flags=re.I):
                     matches.append(self_cal)
-                    self_cal['colorSpec'] = cal_name.color
+                    if cal_name.color != "default":
+                        self_cal['colorSpec'] = cal_name.color
             # Add relevant matches to the list of calendars we want to
             # operate against
             self.cals += matches
