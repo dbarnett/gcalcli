@@ -88,7 +88,7 @@ def main():
     try:
         argv = sys.argv[1:]
         gcalclirc = os.path.expanduser('~/.gcalclirc')
-        if os.path.exists(gcalclirc):
+        if os.path.exists(gcalclirc) and not "--noincluderc" in argv:
             # We want .gcalclirc to be sourced before any other --flagfile
             # params since we may be told to use a specific config folder, we
             # need to store generated argv in temp variable
