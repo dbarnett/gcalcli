@@ -13,6 +13,8 @@ service and execute any application you want when an event is coming up.
 
 gcalcli uses the [Google Calendar API version 3](https://developers.google.com/google-apps/calendar/).
 
+*This version is patched to fix login issues, check the **Login Information** section for the new method of authentication.*
+
 Requirements
 ------------
 
@@ -135,7 +137,9 @@ See the manual (`man (1) gcalcli`), or run with `--help`/`-h` for detailed usage
 
 #### Login Information
 
-**UPDATE 15-Oct-2023:** To use the new method of authentication, follow the instructions at [Authorize credentials for a desktop application](https://developers.google.com/calendar/api/quickstart/python#authorize_credentials_for_a_desktop_application) & save the file as `~/.config/gcalcli/creds.json`
+##### UPDATE 29-Mar-2024
+
+*To use the new method of authentication, follow the instructions at [Authorize credentials for a desktop application](https://developers.google.com/calendar/api/quickstart/python#authorize_credentials_for_a_desktop_application) & save the file as `~/.config/gcalcli/creds.json`. Once you have done this go through the normal login flow (eg run `gcalcli list`). `~/.config/gcalcli/token.json` should be generated. You may also need to remove `~/.gcalcli_oauth`.*
 
 OAuth2 is used for authenticating with your Google account. The resulting token
 is placed in the `~/.gcalcli_oauth` file. When you first start gcalcli the
